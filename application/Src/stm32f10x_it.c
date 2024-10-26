@@ -38,6 +38,7 @@
 #include "ads1115.h"
 #include "as5600.h"
 #include "config.h"
+#include "hx711.h"
 
 /** @addtogroup STM32F10x_StdPeriph_Template
   * @{
@@ -371,8 +372,15 @@ void TIM2_IRQHandler(void)
 					}
 				}
 			}
+			//HX711
+			for (uint8_t i=0; i<MAX_AXIS_NUM; i++)
+			{
+				if (sensors[i].type == HX711)
+				{
+					HX711_Read(&sensors[i]);
+				}
+			}
 		}
-		
 	}
 }
 

@@ -451,6 +451,21 @@ void IO_Init (dev_config_t * p_dev_config)
 		{
 			Generator_Init();	// 4MHz output at PB6 pin
 		}
+		else if (p_dev_config->pins[i] == HX711_SCK)
+		{
+			GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
+			GPIO_InitStructure.GPIO_Speed = GPIO_Speed_10MHz;
+			GPIO_InitStructure.GPIO_Pin = pin_config[i].pin;
+			GPIO_Init(pin_config[i].port, &GPIO_InitStructure);
+			GPIO_WriteBit(pin_config[i].port, pin_config[i].pin, Bit_RESET);
+		}
+		else if (p_dev_config->pins[i] == HX711_DOUT)
+		{
+			GPIO_InitStructure.GPIO_Speed = GPIO_Speed_10MHz;
+			GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
+			GPIO_InitStructure.GPIO_Pin = pin_config[i].pin;
+			GPIO_Init(pin_config[i].port, &GPIO_InitStructure);
+		}
 		else if (p_dev_config->pins[i] == SHIFT_REG_CLK)
 		{
 			GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;

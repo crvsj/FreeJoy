@@ -414,6 +414,7 @@ void AxesInit (dev_config_t * p_dev_config)
 	}
 	
 	// Init sources
+	HX711_InitAll(p_dev_config, sensors, &sensors_cnt);
 	for (int i=0; i<USED_PINS_NUM; i++)
 	{
 		if (p_dev_config->pins[i] == AXIS_ANALOG)
@@ -789,6 +790,12 @@ void AxesProcess (dev_config_t * p_dev_config)
 				{
 					sensors[k].err_cnt++;
 				}
+			}
+			else if (p_dev_config->pins[source] == HX711_DOUT)
+			{
+				tmpf = 0;
+				HX711_GetForce(sensors, source, &tmpf);
+				raw_axis_data[i] = map_tle(tmpf);
 			}
 			else if (p_dev_config->pins[source] == TLE5012_CS)			// source TLE5012
 			{
