@@ -24,6 +24,121 @@
 
 #include "encoders.h"
 
+typedef enum {
+	ST00,
+	ST10,
+	ST01,
+	ST10X11,
+	ST01X11,
+	ST10X11X01,
+	ST01X11X10,
+	STUNKNOWN
+} mod_enc_state_t;
+
+static mod_enc_state_t mod_step_state_machine(const mod_enc_state_t current_state, const int8_t encoder_pin_state, int8_t* out_step) {
+	*out_step = 0;
+	switch (current_state) {
+		case ST00:
+			switch (encoder_pin_state) {
+				case 0b00:
+					return ST00;
+				case 0b10:
+					return ST10;
+				case 0b01:
+					return ST01;
+				case 0b11:
+					return STUNKNOWN;
+			}
+			break;
+		case ST10:
+			switch (encoder_pin_state) {
+				case 0b00:
+					return ST00;
+				case 0b10:
+					return ST10;
+				case 0b01:
+					return STUNKNOWN;
+				case 0b11:
+					return ST10X11;
+			}
+			break;
+		case ST01:
+			switch (encoder_pin_state) {
+				case 0b00:
+					return ST00;
+				case 0b10:
+					return STUNKNOWN;
+				case 0b01:
+					return ST01;
+				case 0b11:
+					return ST01X11;
+			}
+			break;
+		case ST10X11:
+			switch (encoder_pin_state) {
+				case 0b00:
+					return STUNKNOWN;
+				case 0b10:
+					return ST10;
+				case 0b01:
+					return ST10X11X01;
+				case 0b11:
+					return ST10X11;
+			}
+			break;
+		case ST01X11:
+			switch (encoder_pin_state) {
+				case 0b00:
+					return STUNKNOWN;
+				case 0b10:
+					return ST01X11X10;
+				case 0b01:
+					return ST01;
+				case 0b11:
+					return ST01X11;
+			}
+			break;
+		case ST10X11X01:
+			switch (encoder_pin_state) {
+				case 0b00:
+				  *out_step = -1;
+					return ST00;
+				case 0b10:
+					return STUNKNOWN;
+				case 0b01:
+					return ST10X11X01;
+				case 0b11:
+					return ST10X11;
+			}
+			break;
+		case ST01X11X10:
+			switch (encoder_pin_state) {
+				case 0b00:
+					*out_step = 1;
+					return ST00;
+				case 0b10:
+					return ST01X11X10;
+				case 0b01:
+					return STUNKNOWN;
+				case 0b11:
+					return ST01X11;
+			}
+			break;
+		case STUNKNOWN:
+			switch (encoder_pin_state) {
+				case 0b00:
+					return ST00;
+				case 0b10:
+					return STUNKNOWN;
+				case 0b01:
+					return STUNKNOWN;
+				case 0b11:
+					return STUNKNOWN;
+			}
+			break;
+	}
+	return ST00;
+}
 
 const int8_t enc_array_1 [16] =
 {
@@ -50,6 +165,8 @@ const int8_t enc_array_4 [16] =
 };
 
 encoder_state_t encoders_state[MAX_ENCODERS_NUM];
+
+mod_enc_state_t mod_encoder_states[MAX_ENCODERS_NUM];
 
 static void EncoderFastInit(dev_config_t * p_dev_config)
 {
@@ -153,7 +270,8 @@ void EncoderProcess (logical_buttons_state_t * button_state_buf, dev_config_t * 
 				{
 					default:
 					case ENCODER_CONF_1x:
-						stt = enc_array_1[encoders_state[i].state & 0x0F];
+						mod_encoder_states[i] = mod_step_state_machine(mod_encoder_states[i], encoders_state[i].state & 0b11, &stt);
+						//stt = enc_array_1[encoders_state[i].state & 0x0F];
 					break;
 					
 					case ENCODER_CONF_2x:
